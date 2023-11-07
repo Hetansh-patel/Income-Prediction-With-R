@@ -1,0 +1,53 @@
+Factors:
+
+Workclass:
+
+Private = 1
+State-gov,Federal-gov,Local-gov = 2
+Self_employed = 3
+without-pay = 4
+
+Education:
+
+Hs-grad,Bachelors,prof-school = 1
+MAsters = 2
+Doctorate = 3
+Rest = 4
+
+Marital Status:
+
+widowed, Divorced, Never-married, separated = 1 (not married)
+married-civ-spouse, married-AF-spouse,Married-spouse-absent = 2 (married)
+
+Occupation:
+
+
+
+Relationship status:
+
+Deleting this columns
+
+Race:
+
+White = 1
+black = 2
+Asian = 3
+other,amer-indian-eskimo = 4
+
+Native Country:
+
+united States,canada,mexico,Trinad&Tobago,South, Puerto-rico,Hondurras, Cuba,Nicaragua, Dominican-Republic,Guatemala,EL-Salvador,Jamaica, Ecuador, Outlying-Us, Columbia, Ecuador,    = 1 (America)
+
+Greece, Holad-netherlands, Poland, England, Germany, Italy,Ireland, Hungary, France, Yugoslavia, Portugal, Scotland =2 (Europe)
+
+Vietnam,China, India, Taiwan, Philippines,Iran, Japan, Hong,Cambodia,Laos, Thailand = 3 (asia)
+
+
+Sex:
+Male =1 
+Female = 2
+
+Income:
+
+<=50K = 1 (less than 50k)
+>50K = 2 (more than 50 K)

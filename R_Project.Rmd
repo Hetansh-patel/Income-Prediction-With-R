@@ -1,0 +1,741 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Importing Libraries
+```{r}
+options(scipen = 99)
+library(ggplot2)
+library(GGally)
+library(rsample)    
+library(caTools)
+library(reshape2)
+library(ggpubr)     
+library(glmnet)
+library(corrplot)
+library(psych)
+library(ggpubr)
+library(ggcorrplot)
+library(pROC)
+library(caret)
+library(rpart)        
+library(rpart.plot)
+```
+
+
+```{r}
+df = adult
+```
+
+
+```{r}
+summary(df)
+```
+
+
+```{r}
+colSums(is.na(df))
+```
+Theres a problem in our data. Na values are marked as "?". So we have to fix that first
+
+```{r}
+df[df == "?"] = NA
+```
+
+Now its showing our NA values
+```{r}
+colSums(is.na(df))
+```
+Every column that has NA values is char type. So even if we fill that values it would be miss leading rather than its better to delete that rows.
+
+```{r}
+df = na.omit(df)
+```
+
+
+```{r}
+summary(df)
+```
+
+
+```{r}
+cat("Unique values in Workclass:\n\n")
+unique(df$workclass)
+cat('\n')
+
+cat("Unique values in Education:\n\n")
+unique(df$education)
+cat('\n')
+
+cat("Unique values in Marital Status:\n\n")
+unique(df$marital.status)
+cat('\n')
+
+cat("Unique values in Occupation:\n\n")
+unique(df$occupation)
+cat('\n')
+
+cat("Unique values in Relationship Status:\n\n")
+unique(df$relationship)
+cat('\n')
+
+cat("Unique values in Race:\n\n")
+unique(df$race)
+cat('\n')
+
+cat("Unique values in Native Country:\n\n")
+unique(df$native.country)
+cat('\n')
+
+cat("Unique values in Income:\n")
+unique(df$income)
+```
+
+
+```{r}
+# Replace 'workclass' values in the existing dataframe
+df$workclass <- ifelse(df$workclass == "Private", 1,
+                       ifelse(df$workclass %in% c("State-gov", "Federal-gov", "Local-gov"), 2,
+                       ifelse(df$workclass == "Without-pay", 4, 3)))
+
+
+```
+
+
+```{r}
+df$education <- ifelse(df$education %in% c("HS-grad", "Bachelors", "Prof-school"), 1,
+                             ifelse(df$education == "Masters", 2,
+                             ifelse(df$education == "Doctorate", 3, 4)))
+
+```
+
+
+
+```{r}
+df$marital.status <- ifelse(df$marital.status %in% c("Widowed", "Divorced", "Never-married", "Separated"), 1,
+                                  ifelse(df$marital.status %in% c("Married-civ-spouse", "Married-AF-spouse", "Married-spouse-absent"), 2, NA))
+
+
+```
+
+
+
+```{r}
+df$relationship = NULL
+```
+
+
+```{r}
+df$race <- ifelse(df$race == "White", 1,
+                      ifelse(df$race == "Black", 2,
+                      ifelse(df$race %in% c("Asian-Pac-Islander", "Amer-Indian-Eskimo"), 3, 4)))
+
+```
+
+
+```{r}
+df$native.country <- ifelse(df$native.country %in% c(
+    "United-States", "Canada", "Mexico", "Trinadad&Tobago", "South", "Puerto-Rico", "Honduras", "Cuba", "Nicaragua", "Dominican-Republic",
+    "Guatemala", "El-Salvador", "Jamaica", "Ecuador", "Outlying-US(Guam-USVI-etc)", "Columbia", "Ecuador","Peru","Haiti"), 1,
+  
+  ifelse(df$native.country %in% c(
+    "Greece", "Holand-Netherlands", "Poland", "England", "Germany", "Italy", "Ireland", "Hungary", "France", "Yugoslavia", "Portugal", "Scotland"), 2,
+  
+  ifelse(df$native.country %in% c(
+    "Vietnam", "China", "India", "Taiwan", "Philippines", "Iran", "Japan", "Hong", "Cambodia", "Laos", "Thailand"), 3, NA)))
+
+```
+
+
+```{r}
+df$income <- ifelse(df$income == "<=50K", 1, 
+                           ifelse(df$income == ">50K", 2, NA))
+
+```
+
+```{r}
+df$sex = ifelse(df$sex == "Male", 1,2)
+```
+
+
+```{r}
+df1 = df
+```
+
+
+```{r}
+df1$Exec_managerial <- as.numeric(df$occupation == "Exec-managerial")
+df1$Prof_specialty <- as.numeric(df$occupation == "Prof-specialty")
+df1$Machine_op_inspct <- as.numeric(df$occupation == "Machine-op-inspct")
+df1$Tech_support <- as.numeric(df$occupation == "Tech-support")
+df1$Craft_repair <- as.numeric(df$occupation == "Craft-repair")
+df1$Transport_moving <- as.numeric(df$occupation == "Transport-moving")
+df1$Other_service <- as.numeric(df$occupation == "Other-service")
+df1$Adm_clerical <- as.numeric(df$occupation == "Adm-clerical")
+df1$Sales <- as.numeric(df$occupation == "Sales")
+df1$Farming_fishing <- as.numeric(df$occupation == "Farming-fishing")
+df1$Protective_serv <- as.numeric(df$occupation == "Protective-serv")
+df1$Handlers_cleaners <- as.numeric(df$occupation == "Handlers-cleaners")
+df1$Armed_Forces <- as.numeric(df$occupation == "Armed-Forces")
+df1$Priv_house_serv <- as.numeric(df$occupation == "Priv-house-serv")
+
+```
+
+
+```{r}
+correlation_plot(df1)
+```
+
+
+```{r}
+df$native.country = NULL
+df1$Armed_Forces = NULL
+df1$fnlwgt = NULL
+df1$native.country = NULL
+df1$occupation = NULL
+df1$Priv_house_serv = NULL
+df1$Sales = NULL
+df1$Protective_serv = NULL
+df1$Tech_support = NULL
+
+```
+
+Placing our income column to last
+```{r}
+df1 <- df1[, c(setdiff(names(df1), "income"), "income")]
+
+```
+
+```{r}
+correlation_plot(df1)
+```
+
+
+```{r}
+colnames(df1)
+```
+
+
+```{r}
+ggplot(df1, aes(x = age)) +
+  geom_histogram(fill = "skyblue", color = "black", bins = 30) + 
+  labs(title = "Age Distribution", x = "Age", y = "Count") +
+  theme_cleveland() +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+```
+
+
+```{r}
+df1$workclass = as.factor(df1$workclass)
+
+custom_labels_w = c(
+  "1" = "Private",  # Replace "1" with the appropriate value
+  "2" = "Goverment",  # Replace "2" with the appropriate value
+  "3" = "Self Employed",  # Replace "3" with the appropriate value
+  "4" = "Without Pay")
+
+ggplot(df1, aes(x = workclass, fill = workclass, group = workclass)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(labels = custom_labels_w)
+
+```
+
+
+```{r}
+df1$education = as.factor(df1$education)
+
+custom_labels_e = c(
+  "1" = "Bachelors Level",  # Replace "1" with the appropriate value
+  "2" = "Masters",  # Replace "2" with the appropriate value
+  "3" = "Doctorate",  # Replace "3" with the appropriate value
+  "4" = "Others")
+
+ggplot(df1, aes(x = education, fill = education, group = education)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1")+
+  scale_x_discrete(labels = custom_labels_e)
+  
+
+```
+
+
+```{r}
+df1$marital.status = as.factor(df1$marital.status)
+
+custom_labels_m = c(
+  "1" = "Single", 
+  "2" = "Married")
+
+ggplot(df1, aes(x = marital.status, fill = marital.status, group = marital.status)) +
+  geom_bar(color = "black") +
+  labs(title = "Maritial Status Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1") +
+   scale_x_discrete(labels = custom_labels_m)
+  
+```
+
+
+```{r}
+df1$race = as.factor(df1$race)
+
+custom_labels_r = c(
+  "1" = "White",  
+  "2" = "Black",  
+  "3" = "Asian",  
+  "4" = "Others")
+
+ggplot(df1, aes(x = race, fill = race, group = race)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1")+
+  scale_x_discrete(labels = custom_labels_r)
+```
+
+```{r}
+# Load the required library
+library(plotrix)
+
+# Assuming your dataset contains a column for gender
+gender_counts = table(df1$sex)
+
+# Create a 3D pie chart with labels and percentages, split from the middle
+pie3D(gender_counts, main = "Gender Distribution", col = c("pink", "blue"), explode = 0.1)
+legend("topright", legend = paste(names(gender_counts), "(", formatC(gender_counts / sum(gender_counts) * 100, format = "f", digits = 2), "%)"), fill = c("pink", "blue"))
+
+```
+Lets start building models
+
+
+```{r}
+summary(df1)
+```
+Lets first convert factors to numeric
+```{r}
+df1$workclass = as.numeric(df1$workclass)
+df1$education = as.numeric(df1$education)
+df1$marital.status = as.numeric(df1$marital.status)
+df1$race = as.numeric(df1$race)
+```
+
+
+```{r}
+df1$Exec_managerial = NULL
+df1$Prof_specialty= NULL
+df1$Machine_op_inspct= NULL
+df1$Transport_moving= NULL
+df1$Craft_repair= NULL
+df1$Handlers_cleaners= NULL
+df1$Farming_fishing= NULL
+df1$Adm_clerical= NULL
+df1$Other_service= NULL
+```
+
+
+
+
+```{r}
+data = split_show(df1, 0.7)
+data[[1]]
+df_train = data[[2]]
+df_test = data[[3]]
+```
+
+
+```{r}
+tree_model = rpart(income ~., data = df_train, method = 'class', cp = -1)
+```
+
+
+```{r}
+rpart.plot(tree_model)
+```
+
+
+```{r}
+# type = "prob", "vector", "class", "matrix"
+y_pred_train = predict(tree_model,newdata=df_train,type = 'class' )
+y_pred_test = predict(tree_model,newdata=df_test, type = 'class')
+#y_pred_test
+```
+
+
+```{r}
+df_train_results = data.frame(y_pred_train,df_train$income)
+```
+
+
+```{r}
+confusionMatrix(table(df_train_results))
+```
+
+
+```{r}
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+
+
+```{r}
+# Load the required library
+library(randomForest)
+
+# Train a Random Forest classifier
+rf_model <- randomForest(income ~ ., data = df_train, ntree = 5)
+
+# Make predictions on the test data
+predictions <- predict(rf_model, df_test)
+
+# Evaluate the model's accuracy
+accuracy <- mean(predictions == df_test$income)
+cat("Accuracy:", accuracy, "\n")
+
+# View the importance of each feature
+varImpPlot(rf_model)
+
+
+```
+
+
+```{r}
+# Load the e1071 package
+library(e1071)
+
+# Create an SVM model
+svm_model <- svm(income ~ ., data = df_train, kernel = "linear")
+
+# Make predictions on the test data
+predictions <- predict(svm_model, newdata = df_test)
+
+# Evaluate the model
+confusion_matrix <- table(Actual = df_test$income, Predicted = predictions)
+print(confusion_matrix)
+
+
+```
+
+
+```{r}
+library(class)
+
+# Set the number of neighbors (k) - you can adjust this value
+k <- 5
+
+# Create a KNN model
+knn_model <- knn(train = df_train, test = df_test, cl = df_train$income, k = k)
+
+# Evaluate the model
+confusion_matrix <- table(Actual = df_test$income, Predicted = knn_model)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(confusion_matrix)
+cat("Accuracy: ", accuracy, "\n")
+
+
+```
+Make Every column to factor 
+
+```{r}
+df_train$income = as.factor(df_train$income)
+df_test$income = as.factor(df_test$income)
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+

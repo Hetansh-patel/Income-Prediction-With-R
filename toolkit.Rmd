@@ -1,0 +1,224 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Metrics for evaluation
+```{r}
+evaluate_metrics <- function(actual, predicted) {
+  mae <- mean(abs(actual - predicted))
+  mse <- mean((actual - predicted)^2)
+  rmse <- sqrt(mse)
+  r_squared <- 1 - (sum((actual - predicted)^2) / sum((actual - mean(actual))^2))
+  
+  return(list(MAE = mae, MSE = mse, RMSE = rmse, R_squared = r_squared))
+}
+```
+
+
+Correlation Matrix
+```{r}
+correlation_plot <- function(df) {
+  # Extract only the numeric columns
+  numeric_df <- df[, sapply(df, is.numeric)]
+
+  if (!require("corrplot")) install.packages("corrplot")
+  if (!require("ggplot2")) install.packages("ggplot2")
+  if (!require("ggcorrplot")) install.packages("ggcorrplot")
+  if (!require("psych")) install.packages("psych")
+
+  correlation_matrix <- corrplot((cor.plot(numeric_df)), method = "color", type = "upper", tl.cex = 0.6, tl.col = "black", tl.srt = 45)
+  
+  return(correlation_matrix)
+}
+
+```
+
+
+```{r}
+split_show = function(df, split_ratio)
+  
+#split radio is train / test
+#Assumes partition based on last column
+{
+
+if (!require("caTools")) install.packages("caTools") #Check if package installed and load to memory 
+  
+if (!require("ggplot2")) install.packages("ggplot2") #Check if package installed and load to memory
+
+if (!require("ggpubr")) install.packages("ggplot2") #Check if package installed and load to memory
+
+n_columns = ncol(df) #Getting number of columns in data frame
+
+label_data = df[[n_columns]] #getting last column values
+sample = sample.split(label_data, SplitRatio = split_ratio)
+df_train = subset(df, sample == TRUE)
+df_test = subset(df, sample == FALSE)
+
+if (is.factor(df[[n_columns]])==TRUE) #Check if factor or not
+{
+  P0 = ggplot(df, aes_string(x = colnames(df)[n_columns]))+ 
+     geom_bar(stat = 'count',fill = 'lightblue') #bars for factors
+} else
+{
+  P0 = ggplot(df, aes_string(x = colnames(df)[n_columns]))+ 
+     geom_histogram(fill = 'lightblue') #Histograms for continuous
+}
+
+P0 = P0 +
+  ggtitle('Original Set')+
+  xlab('Label') + ylab('Frequency')+
+  theme_minimal()
+
+if (is.factor(df_train[[n_columns]])==TRUE) #Check if factor or not
+{
+  P1 = ggplot(df_train, aes_string(x = colnames(df_train)[n_columns]))+ 
+     geom_bar(stat = 'count',fill = 'lightblue') #bars for factors
+} else
+{
+  P1 = ggplot(df_train, aes_string(x = colnames(df_train)[n_columns]))+ 
+     geom_histogram(fill = 'lightblue') #Histograms for continuous
+}
+
+
+P1 = P1 +
+  ggtitle('Training Set')+
+  xlab('Label') + ylab('Frequency')+
+  theme_minimal()
+
+
+if (is.factor(df_test[[n_columns]])==TRUE) #Check if factor or not
+{
+  P2 = ggplot(df_test, aes_string(x = colnames(df_test)[n_columns]))+ 
+     geom_bar(stat = 'count',fill = 'lightblue') #bars for factors
+} else
+{
+  P2 = ggplot(df_test, aes_string(x = colnames(df_test)[n_columns]))+
+  geom_histogram(fill = 'lightblue')
+}
+
+P2 = P2 +
+  ggtitle('Testing Set') +
+  xlab('Label') + ylab('Frequency')+
+  theme_minimal()
+
+plots = ggarrange(P0, P1, P2, nrow = 1)
+
+return(list(plots, df_train, df_test))
+
+#data = split_show(df1,0.7)
+#data[[1]]
+#df_train = data[[2]]
+#df_test = data[[3]]
+
+}
+```
+
+
+```{r}
+scaled_boxplot = function(df){
+  
+  if (!require("ggplot2")) install.packages("ggplot2")
+  
+  if (!require("reshape2")) install.packages("reshape2")
+  
+  ggplot(melt(df), aes(x=variable, y = value))+
+  geom_boxplot()+
+  ggtitle(' Scaled Data Set')+
+  xlab('')+ylab('Scaled Values')+
+  theme(axis.text.x=element_text(angle=45,hjust=1))
+}
+```
+
+
+```{r}
+plotpredict = function(df_train,y_pred_train,feature_train,df_test,y_pred_test, feature_test){
+  
+  if (!require("ggplot2")) install.packages("ggplot2")
+  
+  if (!require("gridExtra")) install.packages("gridExtra")
+  
+  p1 = ggplot(df_train,aes(y = y_pred_train, x = feature_train))+
+  geom_point()+
+  ggtitle("Train data Set")+
+  xlab('Observed') + ylab('Predicted')
+
+  p2= ggplot(df_test,aes(y = y_pred_test, x = feature_test))+
+  geom_point()+
+  ggtitle("Test data Set")+
+  xlab('Observed') + ylab('Predicted')
+
+  Arrange = ggarrange(p1,p2)
+  
+  #Train Set Metrics
+  mae_train <- mean(abs(feature_train - y_pred_train))
+  mse_train <- mean((feature_train - y_pred_train)^2)
+  rmse_train <- sqrt(mse_train)
+  r_squared_train <- 1 - (sum((feature_train - y_pred_train)^2) / sum((feature_train - mean(feature_train))^2))
+  metrics_train = (list(MAE = mae_train, MSE = mse_train, RMSE = rmse_train, R_squared = r_squared_train))
+  
+  #Test Set Metrics
+  mae_test <- mean(abs(feature_test - y_pred_test))
+  mse_test <- mean((feature_test - y_pred_test)^2)
+  rmse_test <- sqrt(mse_train)
+  r_squared_test <- 1 - (sum((feature_test - y_pred_test)^2) / sum((feature_test - mean(feature_test))^2))
+  metrics_test = (list(MAE = mae_test, MSE = mse_test, RMSE = rmse_test, R_squared = r_squared_test))
+
+  matrix_test <- data.frame(Metric = names(metrics_test), Test = unlist(metrics_test))
+  matrix_train <- data.frame(Metric = names(metrics_train), Train = unlist(metrics_train))
+
+  matrixs_combined <- merge(matrix_test, matrix_train, by = "Metric")
+  grid_layout = grid.arrange(ggplotGrob(Arrange),tableGrob(matrixs_combined),ncol = 2)
+  return(grid_layout)
+  
+}
+```
+
+```{r}
+min_max_scaling <- function(data) {
+  # Extract only the numerical columns
+  numeric_data <- data[, sapply(data, is.numeric)]
+
+  # Calculate the minimum and maximum values for each numerical column
+  min_values <- apply(numeric_data, 2, min)
+  max_values <- apply(numeric_data, 2, max)
+
+  # Perform min-max scaling on the numerical columns
+  scaled_data <- scale(numeric_data, center = min_values, scale = max_values - min_values)
+
+  # Replace the original numerical columns with the scaled ones
+  data[, sapply(data, is.numeric)] <- scaled_data
+
+  return(data)
+}
+
+# Example usage:
+# Replace 'your_data' with your actual data frame
+#scaled_df <- min_max_scaling(cancer)
+#X_train <- result$scaled_train_data
+#X_test <- result$scaled_test_data
+```
+
+```{r}
+standardization_function <- function(train_data, test_data) {
+  n_columns_train <- ncol(train_data) - 1  # Exclude the target variable column
+  n_columns_test <- ncol(test_data) - 1    # Exclude the target variable column
+
+  df_means_train <- colMeans(train_data[, 1:n_columns_train])
+  df_sdevs_train <- apply(train_data[, 1:n_columns_train], 2, sd)
+
+  X_train <- (train_data[, 1:n_columns_train] - df_means_train) / df_sdevs_train
+  X_test <- (test_data[, 1:n_columns_test] - df_means_train) / df_sdevs_train  # Using means and sdevs from the training data
+  
+  return(list(X_train = X_train, X_test = X_test))
+}
+
+# Example usage:
+#result <- standardization_function(your_train_data, your_test_data)
+
+# Access standardized data as X_train and X_test
+#X_train <- result$X_train
+#X_test <- result$X_test
+
+```
+
