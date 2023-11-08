@@ -1,0 +1,985 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Importing Libraries
+```{r}
+options(scipen = 99)
+library(ggplot2)
+library(GGally)
+library(rsample)    
+library(caTools)
+library(reshape2)
+library(ggpubr)     
+library(glmnet)
+library(corrplot)
+library(psych)
+library(ggpubr)
+library(ggcorrplot)
+library(pROC)
+library(caret)
+library(rpart)        
+library(rpart.plot)
+library(plotrix)
+library(e1071)
+library(class)
+library(neuralnet)
+library(gbm)
+library(randomForest)
+```
+
+
+```{r}
+df = adult
+```
+
+
+```{r}
+summary(df)
+```
+
+
+```{r}
+colSums(is.na(df))
+```
+Theres a problem in our data. Na values are marked as "?". So we have to fix that first
+
+```{r}
+df[df == "?"] = NA
+```
+
+Now its showing our NA values
+```{r}
+colSums(is.na(df))
+```
+Every column that has NA values is char type. So even if we fill that values it would be miss leading rather than its better to delete that rows.
+
+```{r}
+df = na.omit(df)
+```
+
+
+```{r}
+summary(df)
+```
+
+```{r}
+correlation_plot(df)
+```
+
+
+```{r}
+cat("Unique values in Workclass:\n\n")
+unique(df$workclass)
+cat('\n')
+
+cat("Unique values in Education:\n\n")
+unique(df$education)
+cat('\n')
+
+cat("Unique values in Marital Status:\n\n")
+unique(df$marital.status)
+cat('\n')
+
+cat("Unique values in Occupation:\n\n")
+unique(df$occupation)
+cat('\n')
+
+cat("Unique values in Relationship Status:\n\n")
+unique(df$relationship)
+cat('\n')
+
+cat("Unique values in Race:\n\n")
+unique(df$race)
+cat('\n')
+
+cat("Unique values in Native Country:\n\n")
+unique(df$native.country)
+cat('\n')
+
+cat("Unique values in Income:\n")
+unique(df$income)
+```
+
+```{r}
+# Replace 'workclass' values in the existing dataframe
+df$workclass <- ifelse(df$workclass == "Private", 1,
+                       ifelse(df$workclass %in% c("State-gov", "Federal-gov", "Local-gov"), 2,
+                       ifelse(df$workclass == "Without-pay", 4, 3)))
+
+df$education <- ifelse(df$education %in% c("HS-grad", "Bachelors", "Prof-school"), 1,
+                             ifelse(df$education == "Masters", 2,
+                             ifelse(df$education == "Doctorate", 3, 4)))
+
+df$marital.status <- ifelse(df$marital.status %in% c("Widowed", "Divorced", "Never-married", "Separated"), 1,
+                                  ifelse(df$marital.status %in% c("Married-civ-spouse", "Married-AF-spouse", "Married-spouse-absent"), 2, NA))
+
+df$relationship = NULL
+
+df$race <- ifelse(df$race == "White", 1,
+                      ifelse(df$race == "Black", 2,
+                      ifelse(df$race %in% c("Asian-Pac-Islander", "Amer-Indian-Eskimo"), 3, 4)))
+
+df$native.country <- ifelse(df$native.country %in% c(
+    "United-States", "Canada", "Mexico", "Trinadad&Tobago", "South", "Puerto-Rico", "Honduras", "Cuba", "Nicaragua", "Dominican-Republic",
+    "Guatemala", "El-Salvador", "Jamaica", "Ecuador", "Outlying-US(Guam-USVI-etc)", "Columbia", "Ecuador","Peru","Haiti"), 1,
+  
+  ifelse(df$native.country %in% c(
+    "Greece", "Holand-Netherlands", "Poland", "England", "Germany", "Italy", "Ireland", "Hungary", "France", "Yugoslavia", "Portugal", "Scotland"), 2,
+  
+  ifelse(df$native.country %in% c(
+    "Vietnam", "China", "India", "Taiwan", "Philippines", "Iran", "Japan", "Hong", "Cambodia", "Laos", "Thailand"), 3, NA)))
+
+
+df$sex = ifelse(df$sex == "Male", 1,2)
+
+
+df$income <- ifelse(df$income == "<=50K", 1, 
+                           ifelse(df$income == ">50K", 2, NA))
+
+
+
+```
+
+```{r}
+hours_breaks <- c(1, 40, 45,Inf)
+hours_labels <- c(1, 2, 3)
+
+# Create a new factor variable for age groups
+df$hours.per.week <- cut(df$hours.per.week, breaks = hours_breaks, labels = hours_labels)
+
+
+age_breaks <- c(17, 28, 37, 47,Inf)
+age_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+df$age <- cut(df$age, breaks = age_breaks, labels = age_labels)
+
+educationnum_breaks <- c(1, 9, 10, 13,Inf)
+educationnum_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+df$education.num <- cut(df$education.num, breaks = educationnum_breaks, labels = educationnum_labels)
+
+
+
+fnlwgt_breaks <- c(13769, 117627, 178425, 237628,Inf)
+fnlwgt_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+df$fnlwgt <- cut(df$fnlwgt, breaks = fnlwgt_breaks, labels = fnlwgt_labels)
+
+
+
+```
+
+
+
+```{r}
+
+```
+
+```{r}
+
+
+
+```
+
+
+
+```{r}
+#educationnum_breaks <- c(1, 9, 10, 13,Inf)
+#educationnum_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+#df1$education.num <- cut(df1$education.num, breaks = educationnum_breaks, labels = educationnum_labels)
+```
+
+```{r}
+
+#fnlwgt_breaks <- c(13769, 117627, 178425, 237628,Inf)
+#fnlwgt_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+#df1$fnlwgt <- cut(df1$fnlwgt, breaks = fnlwgt_breaks, labels = fnlwgt_labels)
+```
+
+
+```{r}
+# Replace 'workclass' values in the existing dataframe
+#df$workclass <- ifelse(df$workclass == "Private", 1,
+#                       ifelse(df$workclass %in% c("State-gov", "Federal-gov", "Local-gov"), 2,
+#                       ifelse(df$workclass == "Without-pay", 4, 3)))
+
+
+```
+
+
+```{r}
+#df$education <- ifelse(df$education %in% c("HS-grad", "Bachelors", "Prof-school"), 1,
+#                             ifelse(df$education == "Masters", 2,
+#                             ifelse(df$education == "Doctorate", 3, 4)))
+
+```
+
+
+
+```{r}
+#df$marital.status <- ifelse(df$marital.status %in% c("Widowed", "Divorced", "Never-married", "Separated"), 1,
+#                                  ifelse(df$marital.status %in% c("Married-civ-spouse", "Married-AF-spouse", #"Married-spouse-absent"), 2, NA))
+
+
+```
+
+
+
+```{r}
+#df$relationship = NULL
+```
+
+
+```{r}
+#df$race <- ifelse(df$race == "White", 1,
+#                      ifelse(df$race == "Black", 2,
+#                      ifelse(df$race %in% c("Asian-Pac-Islander", "Amer-Indian-Eskimo"), 3, 4)))
+
+```
+
+
+```{r}
+#df$native.country <- ifelse(df$native.country %in% c(
+#    "United-States", "Canada", "Mexico", "Trinadad&Tobago", "South", "Puerto-Rico", "Honduras", "Cuba", "Nicaragua", #"Dominican-Republic",
+#    "Guatemala", "El-Salvador", "Jamaica", "Ecuador", "Outlying-US(Guam-USVI-etc)", "Columbia", #"Ecuador","Peru","Haiti"), 1,
+  
+#  ifelse(df$native.country %in% c(
+#    "Greece", "Holand-Netherlands", "Poland", "England", "Germany", "Italy", "Ireland", "Hungary", "France", #"Yugoslavia", "Portugal", "Scotland"), 2,
+  
+#  ifelse(df$native.country %in% c(
+#    "Vietnam", "China", "India", "Taiwan", "Philippines", "Iran", "Japan", "Hong", "Cambodia", "Laos", "Thailand"), 3, #NA)))
+
+```
+
+```{r}
+# Define the age groups and labels
+#age_breaks <- c(17, 28, 37, 47,Inf)
+#age_labels <- c(1, 2, 3, 4)
+
+# Create a new factor variable for age groups
+#df$age <- cut(df$age, breaks = age_breaks, labels = age_labels)
+
+
+
+```
+
+
+```{r}
+
+#df$sex = ifelse(df$sex == "Male", 1,2)
+
+
+#df$income <- ifelse(df$income == "<=50K", 1, 
+#                           ifelse(df$income == ">50K", 2, NA))
+
+```
+
+```{r}
+#df$sex = ifelse(df$sex == "Male", 1,2)
+```
+
+
+```{r}
+df1 = df
+```
+
+
+```{r}
+df1$Exec_managerial <- as.factor(df$occupation == "Exec-managerial")
+df1$Prof_specialty <- as.factor(df$occupation == "Prof-specialty")
+df1$Machine_op_inspct <- as.factor(df$occupation == "Machine-op-inspct")
+df1$Tech_support <- as.factor(df$occupation == "Tech-support")
+df1$Craft_repair <- as.factor(df$occupation == "Craft-repair")
+df1$Transport_moving <- as.factor(df$occupation == "Transport-moving")
+df1$Other_service <- as.factor(df$occupation == "Other-service")
+df1$Adm_clerical <- as.factor(df$occupation == "Adm-clerical")
+df1$Sales <- as.factor(df$occupation == "Sales")
+df1$Farming_fishing <- as.factor(df$occupation == "Farming-fishing")
+df1$Protective_serv <- as.factor(df$occupation == "Protective-serv")
+df1$Handlers_cleaners <- as.factor(df$occupation == "Handlers-cleaners")
+df1$Armed_Forces <- as.factor(df$occupation == "Armed-Forces")
+df1$Priv_house_serv <- as.factor(df$occupation == "Priv-house-serv")
+
+```
+
+```{r}
+df1$occupation = NULL
+```
+
+```{r}
+correlation_plot(df1)
+```
+
+```{r}
+df1$native.country = NULL
+```
+
+
+Placing our income column to last
+```{r}
+df1 <- df1[, c(setdiff(names(df1), "income"), "income")]
+
+```
+
+```{r}
+correlation_plot(df1)
+```
+
+
+```{r}
+colnames(df1)
+```
+
+
+```{r}
+ggplot(adult, aes(x = age)) +
+  geom_histogram(fill = "skyblue", color = "black", bins = 30) + 
+  labs(title = "Age Distribution", x = "Age", y = "Count") +
+  theme_cleveland() +
+  theme(plot.title = element_text(hjust = 0.5))  
+```
+
+
+```{r}
+df1$workclass = as.factor(df1$workclass)
+
+custom_labels_w = c(
+  "1" = "Private",  # Replace "1" with the appropriate value
+  "2" = "Goverment",  # Replace "2" with the appropriate value
+  "3" = "Self Employed",  # Replace "3" with the appropriate value
+  "4" = "Without Pay")
+
+ggplot(df1, aes(x = workclass, fill = workclass, group = workclass)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(labels = custom_labels_w)
+```
+
+
+```{r}
+df1$education = as.factor(df1$education)
+
+custom_labels_e = c(
+  "1" = "Bachelors Level",  # Replace "1" with the appropriate value
+  "2" = "Masters",  # Replace "2" with the appropriate value
+  "3" = "Doctorate",  # Replace "3" with the appropriate value
+  "4" = "Others")
+
+ggplot(df1, aes(x = education, fill = education, group = education)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1")+
+  scale_x_discrete(labels = custom_labels_e)
+  
+```
+
+
+```{r}
+df1$marital.status = as.factor(df1$marital.status)
+
+custom_labels_m = c(
+  "1" = "Single", 
+  "2" = "Married")
+
+ggplot(df1, aes(x = marital.status, fill = marital.status, group = marital.status)) +
+  geom_bar(color = "black") +
+  labs(title = "Maritial Status Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1") +
+   scale_x_discrete(labels = custom_labels_m)
+```
+  
+
+
+```{r}
+df1$race = as.factor(df1$race)
+
+custom_labels_r = c(
+  "1" = "White",  
+  "2" = "Black",  
+  "3" = "Asian",  
+  "4" = "Others")
+
+ggplot(df1, aes(x = race, fill = race, group = race)) +
+  geom_bar(color = "black") +
+  labs(title = "WorkClass Distribution", x = "Classes", y = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_brewer(palette = "Set1")+
+  scale_x_discrete(labels = custom_labels_r)
+```
+
+```{r}
+# Assuming your dataset contains a column for gender
+df1$sex = as.factor(df1$sex)
+gender_counts = table(df1$sex)
+
+# Create a 3D pie chart with labels and percentages, split from the middle
+pie3D(gender_counts, main = "Gender Distribution", col = c("pink", "blue"), explode = 0.1)
+legend("topright", legend = paste(names(gender_counts), "(", formatC(gender_counts / sum(gender_counts) * 100, format = "f", digits = 2), "%)"), fill = c("pink", "blue"))
+```
+Lets start building models
+
+
+```{r}
+summary(df1)
+```
+Lets first convert factors to numeric
+```{r}
+df1$workclass = as.factor(df1$workclass)
+df1$education = as.factor(df1$education)
+df1$marital.status = as.factor(df1$marital.status)
+df1$race = as.factor(df1$race)
+df1$income= as.factor(df1$income)
+df1 = na.omit(df1)
+```
+
+
+```{r}
+#df1$Exec_managerial = NULL
+#df1$Prof_specialty= NULL
+#df1$Machine_op_inspct= NULL
+#df1$Transport_moving= NULL
+#df1$Craft_repair= NULL
+#df1$Handlers_cleaners= NULL
+#df1$Farming_fishing= NULL
+#df1$Adm_clerical= NULL
+#df1$Other_service= NULL
+```
+
+
+
+
+```{r}
+#data = split_show(df1, 0.7)
+#data[[1]]
+#df_train = data[[2]]
+#df_test = data[[3]]
+```
+
+```{r}
+#tree_model = rpart(income ~., data = df_train, method = 'class', cp = -1)
+
+# type = "prob", "vector", "class", "matrix"
+#y_pred_train = predict(tree_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(tree_model,newdata=df_test, type = 'class')
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+```
+
+
+```{r}
+
+# Train a Random Forest classifierz
+#rf_model <- randomForest(income ~ ., data = df_train, ntree = 20)
+
+# Make predictions on the test data
+#y_pred_train = predict(rf_model,newdata=df_train)
+#y_pred_test = predict(rf_model,newdata=df_test)
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+
+```
+
+```{r}
+# Create an SVM model
+#svm_model <- svm(income ~ ., data = df_train, kernel = "linear")
+
+#y_pred_train = predict(svm_model,newdata=df_train )
+#y_pred_test = predict(svm_model,newdata=df_test)
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+```
+
+
+```{r}
+
+# Set the number of neighbors (k) - you can adjust this value
+#k <- 10
+
+# Create a KNN model
+#knn_model <- knn(train = df_train, test = df_test, cl = df_train$income, k = k)
+
+#y_pred_train = predict(knn_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(knn_model,newdata=df_test, type = 'class')
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+
+
+
+```
+Make Every column to factor 
+
+```{r}
+#nb_model <- naiveBayes(income ~ ., data = df_train)
+
+#y_pred_train = predict(nb_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(nb_model,newdata=df_test, type = 'class')
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+```
+
+Have to convert all data to numerical or factor
+```{r}
+#nn_model <- neuralnet(income ~. , data = df_train, hidden = c(10, 10))
+
+#y_pred_train = predict(nn_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(nn_model,newdata=df_test, type = 'class')
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+```
+
+
+```{r}
+# Initialize an empty data frame to store results
+results_df <- data.frame(
+  Dataset_Number = integer(),
+  Model = character(),
+  Train_Accuracy = numeric(),
+  Test_Accuracy = numeric()
+)
+
+# Define a list of models
+models <- list(
+  Tree = rpart,
+  Random_Forest = randomForest,
+  Support_Vector = svm,
+  Naive_Bayes = naiveBayes
+)
+
+# Create a list to store datasets
+dataset_list <- list()
+
+# Loop through models
+for (model_name in names(models)) {
+  model <- models[[model_name]]
+  
+  for (i in 1:10) {
+    # Split the data
+    data = split_show(df1, 0.6)
+    df_train = data[[2]]
+    df_test = data[[3]]
+    
+    # Store the dataset in the dataset_list
+    dataset_list[[i]] <- list(df_train = df_train, df_test = df_test)
+    
+    # Fit the model
+    if (model_name == "Random_Forest") {
+      model <- randomForest(income ~ ., data = df_train, ntree = 20)
+    } else if (model_name == "Support_Vector") {
+      model <- svm(income ~ ., data = df_train, kernel = "linear")
+    } else if (model_name == "Naive_Bayes") {
+      model <- naiveBayes(income ~ ., data = df_train)
+    } else {
+      model <- rpart(income ~ ., data = df_train, method = 'class', cp = -1)
+    }
+    
+    # Make predictions on the test data
+    y_pred_train <- predict(model, newdata = df_train, type = 'class')
+    y_pred_test <- predict(model, newdata = df_test, type = 'class')
+    
+    # Calculate train and test accuracy
+    train_accuracy <- sum(y_pred_train == df_train$income) / nrow(df_train)
+    test_accuracy <- sum(y_pred_test == df_test$income) / nrow(df_test)
+    
+    # Add results to results_df
+    results_df <- rbind(results_df, data.frame(
+      Dataset_Number = i,
+      Model = model_name,
+      Train_Accuracy = train_accuracy,
+      Test_Accuracy = test_accuracy
+    ))
+  }
+}
+
+# Display the results
+print(results_df)
+
+
+
+```
+
+
+```{r}
+max_test_accuracy_index <- which.max(results_df$Test_Accuracy)
+
+# Extract the row with the maximum test accuracy
+row_with_max_accuracy <- results_df[max_test_accuracy_index, ]
+
+# Display the row
+row_with_max_accuracy
+```
+
+##Second try without occupation
+
+```{r}
+df2 = df1
+```
+
+
+```{r}
+df2$Exec_managerial = NULL
+df2$Prof_specialty= NULL
+df2$Machine_op_inspct= NULL
+df2$Transport_moving= NULL
+df2$Craft_repair= NULL
+df2$Handlers_cleaners= NULL
+df2$Farming_fishing= NULL
+df2$Adm_clerical= NULL
+df2$Other_service= NULL
+df2$Adm_clerical = NULL
+df2$Sales =NULL
+df2$Farming_fishing = NULL
+df2$Protective_serv = NULL
+df2$Handlers_cleaners = NULL
+df2$Armed_Forces = NULL
+df2$Priv_house_serv = NULL
+df2$Tech_support = NULL
+df2$fnlwgt = NULL
+df2$education.num = NULL
+df2$marital.status = NULL
+df2$sex = NULL
+df2$race = NULL
+#df2$capital.gain = NULL
+#df2$capital.loss = NULL
+```
+
+
+```{r}
+df2
+```
+```{r}
+df2$capital.gain = as.factor(df2$capital.gain)
+df2$capital.loss = as.factor(df2$capital.loss)
+```
+
+
+```{r}
+results_df2 <- data.frame(
+  Dataset_Number = integer(),
+  Model = character(),
+  Train_Accuracy = numeric(),
+  Test_Accuracy = numeric()
+)
+
+# Define a list of models
+models <- list(
+  Tree = rpart,
+  Random_Forest = randomForest,
+  Support_Vector = svm,
+  Naive_Bayes = naiveBayes
+)
+
+# Create a list to store datasets
+dataset_list2 <- list()
+
+# Loop through models
+for (model_name in names(models)) {
+  model <- models[[model_name]]
+  
+  for (i in 1:3) {
+    # Split the data
+    data = split_show(df2, 0.6)
+    df_train = data[[2]]
+    df_test = data[[3]]
+    
+    # Store the dataset in the dataset_list
+    dataset_list2[[i]] <- list(df_train = df_train, df_test = df_test)
+    
+    # Fit the model
+    if (model_name == "Random_Forest") {
+      model <- randomForest(income ~ ., data = df_train, ntree = 20)
+    } else if (model_name == "Support_Vector") {
+      model <- svm(income ~ ., data = df_train, kernel = "linear")
+    } else if (model_name == "Naive_Bayes") {
+      model <- naiveBayes(income ~ ., data = df_train)
+    } else {
+      model <- rpart(income ~ ., data = df_train, method = 'class', cp = -1)
+    }
+    
+    # Make predictions on the test data
+    y_pred_train <- predict(model, newdata = df_train, type = 'class')
+    y_pred_test <- predict(model, newdata = df_test, type = 'class')
+    
+    # Calculate train and test accuracy
+    train_accuracy <- sum(y_pred_train == df_train$income) / nrow(df_train)
+    test_accuracy <- sum(y_pred_test == df_test$income) / nrow(df_test)
+    
+    # Add results to results_df
+    results_df2 <- rbind(results_df2, data.frame(
+      Dataset_Number = i,
+      Model = model_name,
+      Train_Accuracy = train_accuracy,
+      Test_Accuracy = test_accuracy
+    ))
+  }
+}
+
+# Display the results
+print(results_df2)
+
+
+    
+   
+```
+
+
+```{r}
+max_test_accuracy_index <- which.max(results_df2$Test_Accuracy)
+
+# Extract the row with the maximum test accuracy
+row_with_max_accuracy <- results_df2[max_test_accuracy_index, ]
+
+# Display the row
+row_with_max_accuracy
+```
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
