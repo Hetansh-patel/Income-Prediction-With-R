@@ -12,7 +12,8 @@ library(GGally)
 library(rsample)    
 library(caTools)
 library(reshape2)
-library(ggpubr)
+library(ggpubr)     
+library(glmnet)
 library(corrplot)
 library(psych)
 library(ggpubr)
@@ -23,24 +24,26 @@ library(rpart)
 library(rpart.plot)
 library(plotrix)
 library(e1071)
+library(class)
+library(neuralnet)
+library(gbm)
 library(randomForest)
+library(xgboost)
 ```
-Creating new dataset
 
 ```{r}
 df = adult
 ```
 
-summarizing data what we are working with
 ```{r}
 summary(df)
 ```
-checking if any column is NA
+
 ```{r}
 colSums(is.na(df))
 ```
 
-There's a problem in our data. Na values are marked as "?". So we have to fix that first by converting "?" to NA values
+Theres a problem in our data. Na values are marked as "?". So we have to fix that first
 
 ```{r}
 df[df == "?"] = NA
@@ -61,12 +64,17 @@ df = na.omit(df)
 ```{r}
 summary(df)
 ```
-Plotting correlation for numeric columns 
+```{r}
+print(sapply(df, class))
+
+
+
+```
+
 ```{r}
 correlation_plot(df)
 ```
 
-Checking unique values to make it categorical
 ```{r}
 cat("Unique values in Workclass:\n\n")
 unique(df$workclass)
@@ -99,55 +107,6 @@ cat('\n')
 cat("Unique values in Income:\n")
 unique(df$income)
 ```
-
-Converting every possible columns to categorical data such as:
-
-Workclass:
-
-Private = 1
-State-gov,Federal-gov,Local-gov = 2
-Self_employed = 3
-without-pay = 4
-
-Education:
-
-Hs-grad,Bachelors,prof-school = 1
-MAsters = 2
-Doctorate = 3
-Rest = 4
-
-Marital Status:
-
-widowed, Divorced, Never-married, separated = 1 (not married)
-married-civ-spouse, married-AF-spouse,Married-spouse-absent = 2 (married)
-
-Relationship status:
-
-Deleting this columns
-
-Race:
-
-White = 1
-black = 2
-Asian = 3
-other,amer-indian-eskimo = 4
-
-Native Country:
-
-united States,canada,mexico,Trinad&Tobago,South, Puerto-rico,Hondurras, Cuba,Nicaragua, Dominican-Republic,Guatemala,EL-Salvador,Jamaica, Ecuador, Outlying-Us, Columbia, Ecuador,    = 1 (America)
-
-Greece, Holad-netherlands, Poland, England, Germany, Italy,Ireland, Hungary, France, Yugoslavia, Portugal, Scotland =2 (Europe)
-
-Vietnam,China, India, Taiwan, Philippines,Iran, Japan, Hong,Cambodia,Laos, Thailand = 3 (asia)
-
-Sex:
-Male = 1 
-Female = 2
-
-Income:
-
-# <=50K = 1 (less than 50k)
-# >50K = 2 (more than 50 K)
 
 ```{r}
 # Replace 'workclass' values in the existing dataframe
@@ -221,12 +180,10 @@ df$fnlwgt <- cut(df$fnlwgt, breaks = fnlwgt_breaks, labels = fnlwgt_labels)
 
 ```
 
-Creating New dataset from previous data. If we make any mistake in new data we can go back.
 ```{r}
 df1 = df
 ```
 
-Splitting Occupation Columns to each categories it has and creating new columns in our dataset df1.
 ```{r}
 df1$Exec_managerial <- as.factor(df$occupation == "Exec-managerial")
 df1$Prof_specialty <- as.factor(df$occupation == "Prof-specialty")
@@ -245,33 +202,34 @@ df1$Priv_house_serv <- as.factor(df$occupation == "Priv-house-serv")
 
 ```
 
-Now we don't need occupation.
 ```{r}
 df1$occupation = NULL
 ```
 
-See correlation again to check.
 ```{r}
 correlation_plot(df1)
 ```
 
-Both native country and race has very low corelation to income so it make no sense to include them in our analysis.
 ```{r}
 df1$native.country = NULL
 df1$race = NULL
 ```
 
 Placing our income column to last
+
 ```{r}
 df1 <- df1[, c(setdiff(names(df1), "income"), "income")]
 
 ```
 
-checking column names
+```{r}
+correlation_plot(df1)
+```
+
 ```{r}
 colnames(df1)
 ```
-Plotting Age distribution
+
 ```{r}
 ggplot(adult, aes(x = age)) +
   geom_histogram(fill = "skyblue", color = "black", bins = 30) + 
@@ -280,14 +238,13 @@ ggplot(adult, aes(x = age)) +
   theme(plot.title = element_text(hjust = 0.5))  
 ```
 
-Plotting Work class
 ```{r}
 df1$workclass = as.factor(df1$workclass)
 
 custom_labels_w = c(
-  "1" = "Private",  
-  "2" = "Goverment",  
-  "3" = "Self Employed",  
+  "1" = "Private",  # Replace "1" with the appropriate value
+  "2" = "Goverment",  # Replace "2" with the appropriate value
+  "3" = "Self Employed",  # Replace "3" with the appropriate value
   "4" = "Without Pay")
 
 ggplot(df1, aes(x = workclass, fill = workclass, group = workclass)) +
@@ -299,14 +256,13 @@ ggplot(df1, aes(x = workclass, fill = workclass, group = workclass)) +
   scale_x_discrete(labels = custom_labels_w)
 ```
 
-Plotting Education Level
 ```{r}
 df1$education = as.factor(df1$education)
 
 custom_labels_e = c(
-  "1" = "Bachelors Level",  
-  "2" = "Masters",  
-  "3" = "Doctorate",  
+  "1" = "Bachelors Level",  # Replace "1" with the appropriate value
+  "2" = "Masters",  # Replace "2" with the appropriate value
+  "3" = "Doctorate",  # Replace "3" with the appropriate value
   "4" = "Others")
 
 ggplot(df1, aes(x = education, fill = education, group = education)) +
@@ -319,7 +275,6 @@ ggplot(df1, aes(x = education, fill = education, group = education)) +
   
 ```
 
-Plotting Marital Status
 ```{r}
 df1$marital.status = as.factor(df1$marital.status)
 
@@ -336,18 +291,23 @@ ggplot(df1, aes(x = marital.status, fill = marital.status, group = marital.statu
    scale_x_discrete(labels = custom_labels_m)
 ```
 
-Plotting pie chart on gender
 ```{r}
+# Assuming your dataset contains a column for gender
 df1$sex = as.factor(df1$sex)
 gender_counts = table(df1$sex)
 
-pie3D(gender_counts, main = "Gender Distribution", col = c("blue", "pink"), explode = 0.1)
-legend("topright", legend = paste(names(gender_counts), "(", formatC(gender_counts / sum(gender_counts) * 100, format = "f", digits = 1), "%)"), fill = c("blue", "pink"))
+# Create a 3D pie chart with labels and percentages, split from the middle
+pie3D(gender_counts, main = "Gender Distribution", col = c("pink", "blue"), explode = 0.1)
+legend("topright", legend = paste(names(gender_counts), "(", formatC(gender_counts / sum(gender_counts) * 100, format = "f", digits = 1), "%)"), fill = c("pink", "blue"))
 ```
 
-##Lets start building models
+Lets start building models
 
-Lets first convert numeric data to factor.
+```{r}
+summary(df1)
+```
+
+Lets first convert factors to numeric
 
 ```{r}
 df1$workclass = as.factor(df1$workclass)
@@ -357,11 +317,46 @@ df1$income= as.factor(df1$income)
 df1 = na.omit(df1)
 ```
 
-As we can see every possible numerical data is converted into categories.
 ```{r}
 summary(df1)
 ```
-Creating a loop for each model to run multiple times with random trainnig and testing dataset and getting best accuracy possible.
+
+```{r}
+
+# Set the number of neighbors (k) - you can adjust this value
+#k <- 10
+
+# Create a KNN model
+#knn_model <- knn(train = df_train, test = df_test, cl = df_train$income, k = k)
+
+#y_pred_train = predict(knn_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(knn_model,newdata=df_test, type = 'class')
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+
+
+
+
+```
+
+
+```{r}
+#nn_model <- neuralnet(income ~. , data = df_train, hidden = c(10, 10))
+
+#y_pred_train = predict(nn_model,newdata=df_train,type = 'class' )
+#y_pred_test = predict(nn_model,newdata=df_test, type = 'class')
+
+#df_train_results = data.frame(y_pred_train,df_train$income)
+#confusionMatrix(table(df_train_results))
+
+#df_test_results = data.frame(y_pred_test,df_test$income)
+#confusionMatrix(table(df_test_results))
+```
+
 
 ```{r}
 # Initialize an empty data frame to store results
@@ -407,7 +402,7 @@ for (model_name in names(models)) {
       model <- rpart(income ~ ., data = df_train, method = 'class', cp = -1)
     }
     
-    # Make predictions on the train and test data to compare 
+    # Make predictions on the test data
     y_pred_train <- predict(model, newdata = df_train, type = 'class')
     y_pred_test <- predict(model, newdata = df_test, type = 'class')
     
@@ -431,12 +426,7 @@ for (model_name in names(models)) {
 
 ```
 
-
-Running different loop for logistic Regression because we can't do it in upper loop.
-
-Because other algorithms use "Class" type for prediction and Logistic Regression uses Response type. Its difficult to add logistic in upper loop.
 ```{r}
-# Initialize an empty data frame to store results
 results_df_logistic <- data.frame(
   Dataset_Number = integer(),
   Train_Accuracy = numeric(),
@@ -446,7 +436,6 @@ results_df_logistic <- data.frame(
 # Create a list to store datasets
 dataset_list_logistic <- list()
 
-#Initializing loop
 for (i in 1:10) {
   # Split the data
   data = split_show(df1, 0.6)
@@ -479,17 +468,15 @@ for (i in 1:10) {
 }
 
 # Display the results
-#print(results_df_logistic)
+print(results_df_logistic)
 ```
 
-Adding logistic Regression to other models and creating one final data frame of train and test accuracy.
 ```{r}
 results_df_final1 <- rbind(results_df1,results_df_logistic)
 ```
 
 ```{r}
-#Display the results
-#results_df_final1
+results_df_final1
 ```
 
 
@@ -499,7 +486,6 @@ results_df_final1[which.max(results_df_final1$Test_Accuracy), ]
 
 ```
 
-Plotting Max test accuracy from each model to compare it with other models.
 ```{r}
 max_test_accuracy <- aggregate(Test_Accuracy ~ Model, data = results_df_final1, FUN = max)
 
@@ -516,8 +502,6 @@ ggplot(data = max_test_accuracy, aes(x = Model, y = Test_Accuracy, fill = Model)
   theme_minimal() +
   theme(legend.title = element_blank())
 ```
-
-Scatter plot of the same thing
 ```{r}
 ggplot(data = results_df_final1, aes(x = Train_Accuracy, y = Test_Accuracy)) +
   geom_point() +
@@ -528,13 +512,12 @@ ggplot(data = results_df_final1, aes(x = Train_Accuracy, y = Test_Accuracy)) +
 ```
 
 
-#Trying to make Our model more efficient
+##Second try without occupation
 
 ```{r}
 df2 = df1
 ```
 
-Deleting columns with less influence on income by using trail and error method.
 ```{r}
 df2$Exec_managerial = NULL
 df2$Prof_specialty= NULL
@@ -555,15 +538,21 @@ df2$Priv_house_serv = NULL
 df2$Tech_support = NULL
 df2$fnlwgt = NULL
 df2$education.num = NULL
+df2$marital.status = NULL
+df2$sex = NULL
 df2$race = NULL
-
+#df2$capital.gain = NULL
+#df2$capital.loss = NULL
 ```
-In this we deleted all the columns from occupation which we made earlier, fnlwgt, education number and race.
 
 ```{r}
 df2
 ```
-Repeating Same process like first data set.
+
+```{r}
+#df2$capital.gain = as.factor(df2$capital.gain)
+#df2$capital.loss = as.factor(df2$capital.loss)
+```
 
 ```{r}
 results_df2 <- data.frame(
@@ -685,7 +674,7 @@ results_df_final2 <- rbind(results_df2,results_df_logistic2)
 results_df2[which.max(results_df2$Test_Accuracy), ]
 ```
 
-Bar Graph
+
 ```{r}
 max_test_accuracy <- aggregate(Test_Accuracy ~ Model, data = results_df_final2, FUN = max)
 
@@ -703,7 +692,7 @@ ggplot(data = max_test_accuracy, aes(x = Model, y = Test_Accuracy, fill = Model)
   theme(legend.title = element_blank())
 ```
 
-Scatter Plot
+
 ```{r}
 ggplot(data = results_df_final2, aes(x = Train_Accuracy, y = Test_Accuracy)) +
   geom_point() +
@@ -713,33 +702,3 @@ ggplot(data = results_df_final2, aes(x = Train_Accuracy, y = Test_Accuracy)) +
   theme_minimal()
 ```
 
-Predicting outside of our data frame
-```{r}
-new_data = data.frame(
-  age = 2,
-  workclass = 1,
-  education = 2,
-  marital.status = 1,
-  sex = 1,
-  capital.gain = 0,
-  capital.loss = 0,
-  hours.per.week = 2,
-  income = NA
-)
-```
-
-```{r}
-new_data$workclass = as.factor(new_data$workclass)
-new_data$education = as.factor(new_data$education)
-new_data$marital.status = as.factor(new_data$marital.status)
-new_data$sex = as.factor(new_data$sex)
-new_data$age = as.factor(new_data$age)
-new_data$hours.per.week = as.factor(new_data$hours.per.week)
-
-```
-
-predicting outcomes with decision tree.
-```{r}
-predict(tree_model, newdata = new_data)
-```
-So we can see probability of this category will fall in category 1 in income class that is less than 50K

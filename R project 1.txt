@@ -19,13 +19,6 @@ Marital Status:
 widowed, Divorced, Never-married, separated = 1 (not married)
 married-civ-spouse, married-AF-spouse,Married-spouse-absent = 2 (married)
 
-Occupation:
-
-
-
-Relationship status:
-
-Deleting this columns
 
 Race:
 
