@@ -257,8 +257,6 @@ correlation_plot(df1)
 
 Both native country and race has very low corelation to income so it make no sense to include them in our analysis.
 ```{r}
-df1$native.country = NULL
-df1$race = NULL
 ```
 
 Placing our income column to last
@@ -338,12 +336,95 @@ ggplot(df1, aes(x = marital.status, fill = marital.status, group = marital.statu
 
 Plotting pie chart on gender
 ```{r}
-df1$sex = as.factor(df1$sex)
-gender_counts = table(df1$sex)
+# Convert the 'sex' column to a factor (if not already)
+adult$sex <- as.factor(adult$sex)
 
-pie3D(gender_counts, main = "Gender Distribution", col = c("blue", "pink"), explode = 0.1)
-legend("topright", legend = paste(names(gender_counts), "(", formatC(gender_counts / sum(gender_counts) * 100, format = "f", digits = 1), "%)"), fill = c("blue", "pink"))
+# Create a data frame for plotting
+gender_df <- as.data.frame(table(adult$sex))
+names(gender_df) <- c("Gender", "Count")
+
+# Create a bar graph
+ggplot(gender_df, aes(x = Gender, y = Count, fill = Gender)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_manual(values = c("pink", "blue")) +
+  labs(title = "Gender Distribution", x = "Gender", y = "Count") +
+  geom_text(aes(label = Count), vjust = -0.5, position = position_dodge(0.9), size = 3.5) +
+  theme_minimal()
+
 ```
+```{r}
+ggplot(adult, aes(x = income, y = age, fill = income)) + 
+  geom_boxplot() +
+  labs(title = "Age Distribution by Income", x = "Income", y = "Age")
+```
+
+
+```{r}
+ggplot(adult, aes(x = age, y = hours.per.week, color = income)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Age vs Hours per Week by Income", x = "Age", y = "Hours per Week")
+```
+
+
+```{r}
+ggplot(adult, aes(x = age, y = hours.per.week, size = capital.gain, color = capital.gain)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Bubble Chart of Age, Hours Per Week, and Capital Gain", x = "Age", y = "Hours Per Week")
+```
+
+
+```{r}
+ggplot(adult, aes(x = education, fill = income)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Income Distribution Across Education Levels", x = "Education", y = "Proportion") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+ggplot(adult, aes(x = occupation, y = hours.per.week, fill = sex)) + 
+  geom_boxplot() +
+  labs(title = "Hours Per Week by Occupation and Gender", x = "Occupation", y = "Hours Per Week") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+ggplot(adult, aes(x = age, fill = marital.status)) + 
+  geom_density(alpha = 0.7) +
+  labs(title = "Age Distribution by Marital Status", x = "Age", y = "Density")
+```
+
+
+```{r}
+ggplot(adult, aes(x = hours.per.week)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  geom_rug() +
+  labs(title = "Density and Rug Plot for Hours Per Week", x = "Hours Per Week", y = "Density")
+
+```
+```{r}
+marital_income_table <- table(adult$relationship, adult$income)
+mosaicplot(marital_income_table, shade = TRUE,
+       main = "Mosaic Plot of Marital Status and Income",
+       xlab = "Income", ylab = "Marital Status")
+```
+
+
+```{r}
+ggplot(adult, aes(x = hours.per.week)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  geom_rug() +
+  labs(title = "Density and Rug Plot for Hours Per Week", x = "Hours Per Week", y = "Density")
+```
+
+
+```{r}
+ggplot(adult, aes(x = age, y = hours.per.week, size = capital.gain, color = capital.gain)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Bubble Chart of Age, Hours Per Week, and Capital Gain", x = "Age", y = "Hours Per Week")
+```
+
 
 ##Lets start building models
 
@@ -387,7 +468,7 @@ dataset_list <- list()
 for (model_name in names(models)) {
   model <- models[[model_name]]
   
-  for (i in 1:10) {
+  for (i in 1:2) {
     # Split the data
     data = split_show(df1, 0.6)
     df_train = data[[2]]
@@ -398,7 +479,7 @@ for (model_name in names(models)) {
     
     # Fit the model
     if (model_name == "Random_Forest") {
-      model <- randomForest(income ~ ., data = df_train, ntree = 20)
+      model <- randomForest(income ~ ., data = df_train, ntree = 5)
     } else if (model_name == "Support_Vector") {
       model <- svm(income ~ ., data = df_train, kernel = "linear")
     } else if (model_name == "Naive_Bayes") {
@@ -447,7 +528,7 @@ results_df_logistic <- data.frame(
 dataset_list_logistic <- list()
 
 #Initializing loop
-for (i in 1:10) {
+for (i in 1:2) {
   # Split the data
   data = split_show(df1, 0.6)
   df_train = data[[2]]
@@ -489,7 +570,7 @@ results_df_final1 <- rbind(results_df1,results_df_logistic)
 
 ```{r}
 #Display the results
-#results_df_final1
+results_df_final1
 ```
 
 
@@ -526,18 +607,29 @@ ggplot(data = results_df_final1, aes(x = Train_Accuracy, y = Test_Accuracy)) +
        y = "Test Accuracy") +
   theme_minimal()
 ```
-
-
-#Trying to make Our model more efficient
+```{r}
+df1 = na.omit(df1)
+```
 
 ```{r}
 df2 = df1
 ```
 
-Deleting columns with less influence on income by using trail and error method.
+
 ```{r}
-df2$Exec_managerial = NULL
-df2$Prof_specialty= NULL
+ fit=randomForest(factor(income)~., data=df1)
+```
+
+
+```{r}
+varImpPlot(fit,type=2)
+```
+
+
+
+```{r}
+#df2$Exec_managerial = NULL
+#df2$Prof_specialty= NULL
 df2$Machine_op_inspct= NULL
 df2$Transport_moving= NULL
 df2$Craft_repair= NULL
@@ -554,16 +646,49 @@ df2$Armed_Forces = NULL
 df2$Priv_house_serv = NULL
 df2$Tech_support = NULL
 df2$fnlwgt = NULL
-df2$education.num = NULL
+#df2$education.num = NULL
 df2$race = NULL
+df2$native.country = NULL
 
 ```
+
+
+
 In this we deleted all the columns from occupation which we made earlier, fnlwgt, education number and race.
 
+
+
+
+
+
+
+
+
 ```{r}
-df2
+knn_class_st = train(income ~ ., data = df_train, method = "knn",tuneGrid = data.frame(k = seq(10)))
 ```
-Repeating Same process like first data set.
+
+
+```{r}
+plot(knn_class_st)
+```
+
+
+```{r}
+xgbTree_classifier = train(income ~ ., data = df_train,method = 'xgbTree',verbose = 1)
+```
+
+
+```{r}
+plot(xgbTree_classifier)
+```
+
+```{r}
+df2 = na.omit(df2)
+
+df2$income = as.factor(df2$income)
+```
+
 
 ```{r}
 results_df2 <- data.frame(
@@ -588,7 +713,7 @@ dataset_list2 <- list()
 for (model_name in names(models)) {
   model <- models[[model_name]]
   
-  for (i in 1:10) {
+  for (i in 1:2) {
     # Split the data
     data = split_show(df2, 0.6)
     df_train = data[[2]]
@@ -599,12 +724,12 @@ for (model_name in names(models)) {
     
     # Fit the model
     if (model_name == "Random_Forest") {
-      model <- randomForest(income ~ ., data = df_train, ntree = 20)
+      model <- randomForest(income ~ ., data = df_train, ntree = 5)
     } else if (model_name == "Support_Vector") {
       model <- svm(income ~ ., data = df_train, kernel = "linear")
     } else if (model_name == "Naive_Bayes") {
       model <- naiveBayes(income ~ ., data = df_train)
-    } else {
+    }else {
       model <- rpart(income ~ ., data = df_train, method = 'class', cp = -1)
     }
     
@@ -625,12 +750,62 @@ for (model_name in names(models)) {
     ))
   }
 }
-
-# Display the results
-#print(results_df2)
 ```
 
-#FOr df2
+
+```{r}
+results_df2_extra <- data.frame(
+  Dataset_Number = integer(),
+  Model = character(),
+  Train_Accuracy = numeric(),
+  Test_Accuracy = numeric()
+)
+
+# Define a list of models
+models <- list(
+  XGBtree = train,
+  KNN = train
+)
+
+# Create a list to store datasets
+dataset_list2_extra <- list()
+
+# Loop through models
+for (model_name in names(models)) {
+  model <- models[[model_name]]
+  
+  for (i in 1:2) {
+    # Split the data
+    data = split_show(df2, 0.6)
+    df_train = data[[2]]
+    df_test = data[[3]]
+    
+    # Store the dataset in the dataset_list
+    dataset_list2_extra[[i]] <- list(df_train = df_train, df_test = df_test)
+     if (model_name == "XGBtree"){
+      model = train(income ~ ., data = df_train,method = 'xgbTree',verbose = 1)
+    } else {
+      model = train(income ~ ., data = df_train, method = "knn")#tuneGrid = data.frame(k = seq(10)))
+    }
+    
+    y_pred_train <- predict(model, newdata = df_train, type = 'raw')
+    y_pred_test <- predict(model, newdata = df_test, type = 'raw')
+    
+    # Calculate train and test accuracy
+    train_accuracy <- sum(y_pred_train == df_train$income) / nrow(df_train)
+    test_accuracy <- sum(y_pred_test == df_test$income) / nrow(df_test)
+    
+    # Add results to results_df
+    results_df2_extra <- rbind(results_df2_extra, data.frame(
+      Dataset_Number = i,
+      Model = model_name,
+      Train_Accuracy = train_accuracy,
+      Test_Accuracy = test_accuracy
+    ))
+  }
+}
+    
+```
 ```{r}
 results_df_logistic2 <- data.frame(
   Dataset_Number = integer(),
@@ -641,7 +816,7 @@ results_df_logistic2 <- data.frame(
 # Create a list to store datasets
 dataset_list_logistic2 <- list()
 
-for (i in 1:10) {
+for (i in 1:2) {
   # Split the data
   data = split_show(df2, 0.6)
   df_train = data[[2]]
@@ -671,75 +846,235 @@ for (i in 1:10) {
     Test_Accuracy = test_accuracy
   ))
 }
-
-# Display the results
-print(results_df_logistic2)
-
 ```
+```{r}
+results_df_final2 <- rbind(results_df2,results_df_logistic2,results_df2_extra)
+results_df_final2[which.max(results_df_final2$Test_Accuracy), ]
+```
+
 
 ```{r}
-results_df_final2 <- rbind(results_df2,results_df_logistic2)
+results_df_final2
 ```
 
-```{r}
-results_df2[which.max(results_df2$Test_Accuracy), ]
-```
 
-Bar Graph
 ```{r}
 max_test_accuracy <- aggregate(Test_Accuracy ~ Model, data = results_df_final2, FUN = max)
 
-bar_colors <- c("lightblue", "firebrick", "lightyellow", "darkblue", "seagreen")
+bar_colors <- c("lightblue", "firebrick", "black", "darkblue", "seagreen","purple","pink")
 
 # Create a bar plot with different colors for each bar
 ggplot(data = max_test_accuracy, aes(x = Model, y = Test_Accuracy, fill = Model)) +
   geom_bar(stat = "identity", color = "black") +  # Set the outline color to black
   scale_fill_manual(values = bar_colors) +  # Assign custom colors to bars
-  geom_text(aes(label = round(Test_Accuracy, 2)), vjust = -0.5, size = 3.5) +  # Add text labels
+  geom_text(aes(label = round(Test_Accuracy, 2)), vjust = -0.3, size = 3) +  # Add text labels
   labs(title = "Maximum Test Accuracy for Each Model",
        x = "Model",
        y = "Max Test Accuracy") +
   theme_minimal() +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+
+# Create a line chart with different colors for each line
+ggplot(data = max_test_accuracy, aes(x = Model, y = Test_Accuracy, group = Model, color = Model)) +
+  geom_line() +  # Use geom_line to create a line chart
+  geom_point(size = 3) +  # Add points for data points
+  scale_color_manual(values = bar_colors) +  # Assign custom colors to lines
+  geom_text(aes(label = round(Test_Accuracy, 2)), vjust = -0.9, size = 4) +  # Add text labels
+  labs(title = "Maximum Test Accuracy for Each Model",
+       x = "Model",
+       y = "Max Test Accuracy") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0.75, 0.90)
+
 ```
 
-Scatter Plot
-```{r}
-ggplot(data = results_df_final2, aes(x = Train_Accuracy, y = Test_Accuracy)) +
-  geom_point() +
-  labs(title = "Scatter Plot of Train Accuracy vs. Test Accuracy",
-       x = "Train Accuracy",
-       y = "Test Accuracy") +
-  theme_minimal()
-```
-
-Predicting outside of our data frame
-```{r}
-new_data = data.frame(
-  age = 2,
-  workclass = 1,
-  education = 2,
-  marital.status = 1,
-  sex = 1,
-  capital.gain = 0,
-  capital.loss = 0,
-  hours.per.week = 2,
-  income = NA
-)
-```
 
 ```{r}
-new_data$workclass = as.factor(new_data$workclass)
-new_data$education = as.factor(new_data$education)
-new_data$marital.status = as.factor(new_data$marital.status)
-new_data$sex = as.factor(new_data$sex)
-new_data$age = as.factor(new_data$age)
-new_data$hours.per.week = as.factor(new_data$hours.per.week)
-
+df_test$income = as.numeric(df_test$income)
+roc_obj = roc(df_test$income, y_pred_test)
 ```
 
-predicting outcomes with decision tree.
 ```{r}
-predict(tree_model, newdata = new_data)
+plot(roc_obj, main="ROC Curve", col="#1c61b6", lwd=4)
+abline(a=0, b=1, lty=2, col="red") 
 ```
-So we can see probability of this category will fall in category 1 in income class that is less than 50K
+
+```{r}
+auc(roc_obj)
+```
+```{r}
+
+```
+
+
+```{r}
+# Replace "Your_Test_Data" with your actual test data
+predictions <- predict(tree_model, newdata = df_test)
+
+```
+
+
+```{r}
+tree_model = rpart(income ~., data = df_train, 
+  method = 'class', #method for classification trees. 
+  parms = list(split = 'information'), 
+  minsplit = 2, 
+  minbucket = 1, #Run model without the last two to get a full tree.
+  maxdepth = 10,
+  cp = -1)
+```
+
+
+```{r}
+y_pred_train = predict(tree_model,newdata=df_train,type = 'class' )
+y_pred_test = predict(tree_model,newdata=df_test, type = 'class')
+
+cat('TRAIN RESULTS \n\n')
+
+df_train_results = data.frame(y_pred_train,df_train$income)
+confusionMatrix(table(df_train_results))
+
+cat('\n\nTEST RESULTS\n\n')
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+
+
+```{r}
+
+```
+```{r}
+library(randomForest)
+```
+
+
+```{r}
+plot(rf_model)
+```
+
+
+```{r}
+rf_model <- randomForest(income ~ ., data = df_train, ntree = 5)
+```
+
+
+```{r}
+y_pred_train = predict(rf_model,newdata=df_train,type = 'class' )
+y_pred_test = predict(rf_model,newdata=df_test, type = 'class')
+
+cat('TRAIN RESULTS \n\n')
+
+df_train_results = data.frame(y_pred_train,df_train$income)
+confusionMatrix(table(df_train_results))
+
+cat('\n\nTEST RESULTS\n\n')
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+```{r}
+svm_model <- svm(income ~ ., data = df_train, kernel = "linear")
+
+nb_model <- naiveBayes(income ~ ., data = df_train)
+```
+
+
+```{r}
+y_pred_train = predict(svm_model,newdata=df_train,type = 'class' )
+y_pred_test = predict(svm_model,newdata=df_test, type = 'class')
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+```{r}
+svm_pred = prediction(y_pred_test, df_test$income)
+svm_perf = performance(y_pred_test,'tpr','fpr')
+plot(svm_perf, colorize = TRUE)
+abline(a = 0, b = 1, col = "gray") 
+```
+
+
+```{r}
+y_pred_train = predict(nb_model,newdata=df_train,type = 'class' )
+y_pred_test = predict(nb_model,newdata=df_test, type = 'class')
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+
+
+```{r}
+logistic_model <- glm(income ~ ., family = binomial, data = df_train)
+```
+
+
+```{r}
+y_pred_train = predict(logistic_model,newdata=df_train,type = 'response' )
+y_pred_test = predict(logistic_model,newdata=df_test, type = 'response')
+
+```
+
+```{r}
+library(forestplot)
+odds_ratios <- exp(coef(logistic_model))
+forestplot(odds_ratios, main = "Odds Ratios", is.summary = "response")
+```
+
+```{r}
+library(effects)
+effect_plot <- effect('income', logistic_model)
+plot(effect_plot, main = "Effects Plot")
+```
+```{r}
+residuals <- residuals(logistic_model, type = "response")
+predicted_probs <- predict(logistic_model, type = "response")
+plot(predicted_probs, residuals, ylab = "Residuals", xlab = "Predicted Probabilities")
+abline(h = 0, col = "red")
+```
+
+
+
+
+
+```{r}
+
+xgb_model = train(income ~ ., data = df_train,method = 'xgbTree',verbose = 1)
+
+knn_model = train(income ~ ., data = df_train, method = "knn")
+
+```
+```{r}
+# Create an explainer for the XGBoost model
+explainer <- createExplainer(xgb_model)
+
+# Plot the first tree
+plot_tree(explainer, tree_number = 0)
+
+```
+
+
+```{r}
+y_pred_train = predict(xgb_model,newdata=df_train,type = 'raw' )
+y_pred_test = predict(xgb_model,newdata=df_test, type = 'raw')
+
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+
+
+```{r}
+y_pred_train = predict(knn_model,newdata=df_train,type = 'raw' )
+y_pred_test = predict(knn_model,newdata=df_test, type = 'raw')
+
+
+df_test_results = data.frame(y_pred_test,df_test$income)
+confusionMatrix(table(df_test_results))
+```
+
