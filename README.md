@@ -1,2 +1,2 @@
-# Data-science-with-R
+# Income Prediction
 Handling catergorical Data Project with R 
